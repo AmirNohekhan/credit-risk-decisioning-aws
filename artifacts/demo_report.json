@@ -1,0 +1,116 @@
+{
+  "synthetic_population": {
+    "applications": 2500,
+    "historically_approved": 2240,
+    "matured_booked": 2240,
+    "defaults": 462
+  },
+  "models": {
+    "logistic": {
+      "roc_auc": 0.8081761006289309,
+      "pr_auc": 0.5845889948152806,
+      "ks": 0.48091139799183497,
+      "gini": 0.6163522012578617,
+      "brier": 0.18430552704715902
+    },
+    "gradient_boosting_calibrated": {
+      "roc_auc": 0.7775019309279488,
+      "pr_auc": 0.4839180110155729,
+      "ks": 0.4535473904888006,
+      "gini": 0.5550038618558977,
+      "brier": 0.15584430703491656
+    },
+    "split": {
+      "train": 1344,
+      "validation": 448,
+      "test": 448,
+      "train_end": "2022-06-27",
+      "validation_end": "2022-12-23"
+    }
+  },
+  "portfolio": {
+    "approval_rate": 0.25,
+    "observed_default_rate": 0.23333333333333334,
+    "expected_loss": 149469.91999999998
+  },
+  "policies": {
+    "conservative": {
+      "applications": 60,
+      "approval_rate": 0.15,
+      "refer_rate": 0.11666666666666667,
+      "decline_rate": 0.7333333333333333,
+      "booked_volume": 230473.18,
+      "expected_loss": 7957.02,
+      "expected_net_contribution": 31141.24
+    },
+    "balanced": {
+      "applications": 60,
+      "approval_rate": 0.25,
+      "refer_rate": 0.3,
+      "decline_rate": 0.45,
+      "booked_volume": 347635.08,
+      "expected_loss": 14587.6,
+      "expected_net_contribution": 48461.9
+    },
+    "growth": {
+      "applications": 60,
+      "approval_rate": 0.4,
+      "refer_rate": 0.3,
+      "decline_rate": 0.3,
+      "booked_volume": 512114.61,
+      "expected_loss": 29045.61,
+      "expected_net_contribution": 75534.61
+    }
+  },
+  "stress": {
+    "name": "simulated_downturn",
+    "pd_multiplier": 1.35,
+    "lgd_addon": 0.08,
+    "base_expected_loss": 149469.91999999998,
+    "stressed_expected_loss": 224487.71368372953
+  },
+  "fairness_audit": [
+    {
+      "audit_group": "group_a",
+      "count": 28,
+      "approval_rate": 0.2857142857142857,
+      "average_pd": 0.2066512857142857,
+      "observed_default_rate": 0.21428571428571427
+    },
+    {
+      "audit_group": "group_b",
+      "count": 32,
+      "approval_rate": 0.21875,
+      "average_pd": 0.19400196875,
+      "observed_default_rate": 0.25
+    }
+  ],
+  "selection_bias": {
+    "approved_rate": 0.896,
+    "population_default_rate": 0.2384,
+    "booked_default_rate": 0.20625,
+    "ipw_effective_weight": 2412.352275043768
+  },
+  "stability": {
+    "credit_score_psi": 0.015895714282561375
+  },
+  "example_decision": {
+    "application_id": "app_0000946",
+    "pd_12m": 0.157596,
+    "lgd": 0.697413,
+    "ead": 14502.49,
+    "expected_loss": 1593.96,
+    "risk_grade": "D",
+    "model_version": "pd-gb-cal-v1",
+    "feature_version": "application-v1",
+    "decision_id": "dec_a9e10e1f4cff40b7",
+    "decision_timestamp": "2026-08-29T20:28:47.524026Z",
+    "decision": "REFER",
+    "recommended_apr": 20.17,
+    "expected_net_contribution": 2347.07,
+    "reason_codes": [
+      "STRONG_PAYMENT_HISTORY"
+    ],
+    "policy_version": "policy-v1"
+  }
+}

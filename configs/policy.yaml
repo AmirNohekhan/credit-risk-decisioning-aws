@@ -1,0 +1,10 @@
+version: policy-v1
+product: unsecured_personal_loan
+max_pd: 0.18
+refer_pd: 0.10
+max_dti: 0.55
+minimum_verified_income: 18000
+severe_delinquencies_24m: 3
+risk_grades: {A: 0.025, B: 0.055, C: 0.10, D: 0.18, E: 1.0}
+pricing: {funding_cost: 0.05, operating_cost: 0.02, target_margin: 0.035, apr_floor: 0.07, apr_cap: 0.36}
+
