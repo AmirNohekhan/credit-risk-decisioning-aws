@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from credit_risk.analytics import population_stability_index
 from credit_risk.decisioning import DecisionEngine, ead_estimate, risk_grade
 from credit_risk.features import monthly_payment
-from credit_risk.modeling import ModelBundle, temporal_split
+from credit_risk.modeling import ModelBundle, select_champion, temporal_split
 from credit_risk.schemas import Application, Bureau
 from credit_risk.serving import create_app
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
@@ -76,6 +76,16 @@ def test_decision_and_api(application, tmp_path: Path):
 def test_grades_and_psi():
     assert [risk_grade(x) for x in [0.01, 0.04, 0.08, 0.15, 0.3]] == list("ABCDE")
     assert population_stability_index(np.arange(100), np.arange(100)) == pytest.approx(0)
+
+
+def test_champion_selection_enforces_quality_gates():
+    candidates = {
+        "interpretable": {"roc_auc": 0.78, "ks": 0.42, "brier": 0.16},
+        "challenger": {"roc_auc": 0.80, "ks": 0.44, "brier": 0.28},
+    }
+    champion, gates = select_champion(candidates)
+    assert champion == "interpretable"
+    assert gates["challenger"]["passed"] is False
 
 
 def test_validation_rejects_implausible():

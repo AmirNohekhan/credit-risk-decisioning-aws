@@ -15,7 +15,7 @@ from credit_risk.analytics import (
     vintage_analysis,
 )
 from credit_risk.decisioning import DecisionEngine, Policy, policy_simulation
-from credit_risk.modeling import train_models
+from credit_risk.modeling import save_registry_manifest, train_models
 from credit_risk.schemas import Application, Bureau
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
 
@@ -54,6 +54,7 @@ def main(n: int = 2500):
     booked = matured_booked(loans)
     bundle, model_report = train_models(booked)
     bundle.save(str(out / "model.joblib"))
+    save_registry_manifest(str(out / "model_registry.json"), bundle, model_report)
     # Keep the interactive demo quick; model metrics still use the full chronological test cohort.
     engine = DecisionEngine(bundle)
     test = booked.sort_values("application_date").tail(60).copy()

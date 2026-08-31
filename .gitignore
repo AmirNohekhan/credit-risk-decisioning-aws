@@ -7,6 +7,7 @@ __pycache__/
 .ruff_cache/
 artifacts/*.joblib
 artifacts/decisions.json
+artifacts/model_registry.json
 data/processed/
 .terraform/
 *.tfstate*

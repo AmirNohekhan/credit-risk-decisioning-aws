@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -91,6 +92,47 @@ class ModelBundle:
         return joblib.load(path)
 
 
+def select_champion(candidate_metrics: dict[str, dict[str, float]]) -> tuple[str, dict]:
+    """Select the best calibrated candidate subject to minimum risk-model gates."""
+    gates: dict[str, dict[str, float | bool]] = {}
+    eligible: list[str] = []
+    for name, values in candidate_metrics.items():
+        passed = values["roc_auc"] >= 0.65 and values["ks"] >= 0.20 and values["brier"] <= 0.25
+        gates[name] = {
+            "passed": passed,
+            "minimum_auc": 0.65,
+            "minimum_ks": 0.20,
+            "maximum_brier": 0.25,
+        }
+        if passed:
+            eligible.append(name)
+    if not eligible:
+        raise ValueError("No PD candidate passed the configured quality gates")
+    champion = max(
+        eligible,
+        key=lambda name: (candidate_metrics[name]["roc_auc"], -candidate_metrics[name]["brier"]),
+    )
+    return champion, gates
+
+
+def registry_manifest(bundle: ModelBundle, report: dict) -> dict:
+    return {
+        "champion": bundle.model_version,
+        "feature_version": bundle.feature_version,
+        "default_definition": "90+ DPD or charge-off within 12 months",
+        "training_split": report["split"],
+        "candidate_metrics": report["candidates"],
+        "quality_gates": report["quality_gates"],
+        "promotion_decision": "PROMOTE",
+        "compatible_policy_versions": ["policy-v1"],
+    }
+
+
+def save_registry_manifest(path: str, bundle: ModelBundle, report: dict) -> None:
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(registry_manifest(bundle, report), handle, indent=2)
+
+
 def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
     train, val, test = temporal_split(df)
     ytrain = train.default_12m.astype(int)
@@ -102,6 +144,8 @@ def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
         ]
     )
     logistic.fit(train[MODEL_FEATURES], ytrain)
+    logistic_calibrated = CalibratedClassifierCV(FrozenEstimator(logistic), method="sigmoid")
+    logistic_calibrated.fit(val[MODEL_FEATURES], yval)
     gb = Pipeline(
         [
             ("prep", preprocessor(False)),
@@ -114,8 +158,8 @@ def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
         ]
     )
     gb.fit(train[MODEL_FEATURES], ytrain)
-    calibrated = CalibratedClassifierCV(FrozenEstimator(gb), method="sigmoid")
-    calibrated.fit(val[MODEL_FEATURES], yval)
+    gb_calibrated = CalibratedClassifierCV(FrozenEstimator(gb), method="sigmoid")
+    gb_calibrated.fit(val[MODEL_FEATURES], yval)
     defaults = train[train.default_12m.eq(1) & train.lgd_realized.notna()]
     lgd = None
     if len(defaults) >= 20:
@@ -131,13 +175,28 @@ def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
             ]
         )
         lgd.fit(defaults[MODEL_FEATURES], defaults.lgd_realized)
-    reports = {
-        "logistic": metrics(
-            test.default_12m.astype(int), logistic.predict_proba(test[MODEL_FEATURES])[:, 1]
+    candidates = {
+        "logistic_calibrated": metrics(
+            test.default_12m.astype(int),
+            logistic_calibrated.predict_proba(test[MODEL_FEATURES])[:, 1],
         ),
         "gradient_boosting_calibrated": metrics(
-            test.default_12m.astype(int), calibrated.predict_proba(test[MODEL_FEATURES])[:, 1]
+            test.default_12m.astype(int), gb_calibrated.predict_proba(test[MODEL_FEATURES])[:, 1]
         ),
+    }
+    champion, gates = select_champion(candidates)
+    models = {
+        "logistic_calibrated": logistic_calibrated,
+        "gradient_boosting_calibrated": gb_calibrated,
+    }
+    versions = {
+        "logistic_calibrated": "pd-logistic-cal-v2",
+        "gradient_boosting_calibrated": "pd-gb-cal-v2",
+    }
+    reports = {
+        "candidates": candidates,
+        "champion": champion,
+        "quality_gates": gates,
         "split": {
             "train": len(train),
             "validation": len(val),
@@ -146,4 +205,4 @@ def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
             "validation_end": str(val.application_date.max().date()),
         },
     }
-    return ModelBundle(calibrated, lgd), reports
+    return ModelBundle(models[champion], lgd, model_version=versions[champion]), reports

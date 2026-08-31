@@ -6,19 +6,36 @@
     "defaults": 462
   },
   "models": {
-    "logistic": {
-      "roc_auc": 0.8081761006289309,
-      "pr_auc": 0.5845889948152806,
-      "ks": 0.48091139799183497,
-      "gini": 0.6163522012578617,
-      "brier": 0.18430552704715902
+    "candidates": {
+      "logistic_calibrated": {
+        "roc_auc": 0.8081761006289309,
+        "pr_auc": 0.5845889948152806,
+        "ks": 0.48091139799183497,
+        "gini": 0.6163522012578617,
+        "brier": 0.14104968172582205
+      },
+      "gradient_boosting_calibrated": {
+        "roc_auc": 0.7775019309279488,
+        "pr_auc": 0.4839180110155729,
+        "ks": 0.4535473904888006,
+        "gini": 0.5550038618558977,
+        "brier": 0.15584430703491656
+      }
     },
-    "gradient_boosting_calibrated": {
-      "roc_auc": 0.7775019309279488,
-      "pr_auc": 0.4839180110155729,
-      "ks": 0.4535473904888006,
-      "gini": 0.5550038618558977,
-      "brier": 0.15584430703491656
+    "champion": "logistic_calibrated",
+    "quality_gates": {
+      "logistic_calibrated": {
+        "passed": true,
+        "minimum_auc": 0.65,
+        "minimum_ks": 0.2,
+        "maximum_brier": 0.25
+      },
+      "gradient_boosting_calibrated": {
+        "passed": true,
+        "minimum_auc": 0.65,
+        "minimum_ks": 0.2,
+        "maximum_brier": 0.25
+      }
     },
     "split": {
       "train": 1344,
@@ -29,59 +46,59 @@
     }
   },
   "portfolio": {
-    "approval_rate": 0.25,
+    "approval_rate": 0.4,
     "observed_default_rate": 0.23333333333333334,
-    "expected_loss": 149469.91999999998
+    "expected_loss": 134109.7
   },
   "policies": {
     "conservative": {
       "applications": 60,
-      "approval_rate": 0.15,
-      "refer_rate": 0.11666666666666667,
-      "decline_rate": 0.7333333333333333,
-      "booked_volume": 230473.18,
-      "expected_loss": 7957.02,
-      "expected_net_contribution": 31141.24
+      "approval_rate": 0.26666666666666666,
+      "refer_rate": 0.13333333333333333,
+      "decline_rate": 0.6,
+      "booked_volume": 368277.15,
+      "expected_loss": 7615.09,
+      "expected_net_contribution": 43022.4
     },
     "balanced": {
       "applications": 60,
-      "approval_rate": 0.25,
-      "refer_rate": 0.3,
-      "decline_rate": 0.45,
-      "booked_volume": 347635.08,
-      "expected_loss": 14587.6,
-      "expected_net_contribution": 48461.9
+      "approval_rate": 0.4,
+      "refer_rate": 0.21666666666666667,
+      "decline_rate": 0.38333333333333336,
+      "booked_volume": 534188.17,
+      "expected_loss": 17155.66,
+      "expected_net_contribution": 75669.7
     },
     "growth": {
       "applications": 60,
-      "approval_rate": 0.4,
-      "refer_rate": 0.3,
-      "decline_rate": 0.3,
-      "booked_volume": 512114.61,
-      "expected_loss": 29045.61,
-      "expected_net_contribution": 75534.61
+      "approval_rate": 0.48333333333333334,
+      "refer_rate": 0.25,
+      "decline_rate": 0.26666666666666666,
+      "booked_volume": 595103.97,
+      "expected_loss": 22439.41,
+      "expected_net_contribution": 88412.25
     }
   },
   "stress": {
     "name": "simulated_downturn",
     "pd_multiplier": 1.35,
     "lgd_addon": 0.08,
-    "base_expected_loss": 149469.91999999998,
-    "stressed_expected_loss": 224487.71368372953
+    "base_expected_loss": 134109.7,
+    "stressed_expected_loss": 201427.81682697064
   },
   "fairness_audit": [
     {
       "audit_group": "group_a",
       "count": 28,
-      "approval_rate": 0.2857142857142857,
-      "average_pd": 0.2066512857142857,
+      "approval_rate": 0.42857142857142855,
+      "average_pd": 0.19166739285714285,
       "observed_default_rate": 0.21428571428571427
     },
     {
       "audit_group": "group_b",
       "count": 32,
-      "approval_rate": 0.21875,
-      "average_pd": 0.19400196875,
+      "approval_rate": 0.375,
+      "average_pd": 0.173079375,
       "observed_default_rate": 0.25
     }
   ],
@@ -96,18 +113,18 @@
   },
   "example_decision": {
     "application_id": "app_0000946",
-    "pd_12m": 0.157596,
+    "pd_12m": 0.139699,
     "lgd": 0.697413,
     "ead": 14502.49,
-    "expected_loss": 1593.96,
+    "expected_loss": 1412.94,
     "risk_grade": "D",
-    "model_version": "pd-gb-cal-v1",
+    "model_version": "pd-logistic-cal-v2",
     "feature_version": "application-v1",
-    "decision_id": "dec_a9e10e1f4cff40b7",
-    "decision_timestamp": "2026-08-29T20:28:47.524026Z",
+    "decision_id": "dec_d5227dee7ae64b4b",
+    "decision_timestamp": "2026-08-31T15:22:49.044449Z",
     "decision": "REFER",
-    "recommended_apr": 20.17,
-    "expected_net_contribution": 2347.07,
+    "recommended_apr": 19.07,
+    "expected_net_contribution": 2229.4,
     "reason_codes": [
       "STRONG_PAYMENT_HISTORY"
     ],
