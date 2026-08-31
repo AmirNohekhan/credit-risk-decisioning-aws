@@ -54,7 +54,11 @@ def application():
 
 def test_amortization_and_ead():
     assert monthly_payment(12000, 0.12, 12) == pytest.approx(1066.19, rel=0.01)
-    assert ead_estimate(10000, 36) == 8800
+    assert ead_estimate(10000, 36, expected_default_month=0) == 10000
+    assert 8000 < ead_estimate(10000, 36, expected_default_month=6) < 9000
+    assert ead_estimate(10000, 36, expected_default_month=12) < ead_estimate(
+        10000, 36, expected_default_month=6
+    )
 
 
 def test_maturity_and_temporal_split():
@@ -69,7 +73,7 @@ def test_decision_and_api(application, tmp_path: Path):
     bundle = ModelBundle(Stub(), LGD())
     engine = DecisionEngine(bundle)
     d = engine.decide(application)
-    assert d.expected_loss == pytest.approx(0.04 * 0.6 * 22000, abs=0.1)
+    assert d.expected_loss == pytest.approx(0.04 * 0.6 * ead_estimate(25000, 36), abs=0.1)
     assert d.decision == "APPROVE"
     assert d.reason_codes
     client = TestClient(create_app(bundle, tmp_path / "decisions.json"))

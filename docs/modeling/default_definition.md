@@ -6,3 +6,4 @@ A loan with a default before month 12 is immediately classifiable. Otherwise it 
 
 Monthly scheduled and actual payment, balance, DPD, charge-off, prepayment, and recovery records derive the target. The simulator directly retains a latent counterfactual outcome solely to demonstrate acceptance bias; that field is not a model feature and would not exist in real production data.
 
+For application-time expected loss, EAD is the scheduled outstanding principal after six months under the offered installment amortization schedule. Six months is a simplified expected time-to-default assumption for the synthetic demonstration. Production use should estimate the conditional default-month distribution and incorporate payment behavior; it should not reuse this assumption without validation.

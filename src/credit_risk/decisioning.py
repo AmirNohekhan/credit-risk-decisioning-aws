@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from .features import application_features
+from .features import application_features, monthly_payment
 from .modeling import ModelBundle
 from .schemas import Application, Decision, RiskScore
 
@@ -20,8 +20,25 @@ def risk_grade(pd_: float) -> str:
     return next(g for bound, g in GRADE_BOUNDS if pd_ <= bound)
 
 
-def ead_estimate(amount: float, term: int) -> float:
-    return amount * (0.88 if term <= 36 else 0.92)
+def ead_estimate(
+    amount: float,
+    term: int,
+    annual_rate: float = 0.15,
+    expected_default_month: int = 6,
+) -> float:
+    """Outstanding scheduled principal at an assumed default month.
+
+    Personal loans are fully drawn at origination, so EAD is the contractual
+    balance rather than a revolving-credit conversion factor.
+    """
+    months = min(max(expected_default_month, 0), term)
+    payment = monthly_payment(amount, annual_rate, term)
+    balance = amount
+    for _ in range(months):
+        interest = balance * annual_rate / 12
+        principal = max(0.0, payment - interest)
+        balance = max(0.0, balance - principal)
+    return balance
 
 
 def reason_codes(f: dict, pd_: float) -> list[str]:
