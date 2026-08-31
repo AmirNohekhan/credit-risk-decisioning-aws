@@ -12,9 +12,8 @@ Default and censoring follow `docs/modeling/default_definition.md`. Training ref
 
 Champion benchmark: imputation, one-hot encoding, scaling, and class-weighted logistic regression. Challenger: regularized histogram gradient boosting; probabilities are sigmoid-calibrated on a later validation cohort. Evaluation reports ROC-AUC, PR-AUC, KS, Gini, and Brier. Promotion should additionally require segment stability, calibration, EL backtest, policy economics, fairness review, explanation quality, and independent validation.
 
-LGD is a bounded random-forest regression among defaults with observed synthetic recoveries. EAD is a documented installment-balance approximation. EL is PD × LGD × EAD. These assumptions are simplified and product-specific.
+LGD is a bounded random-forest regression among defaults with observed synthetic recoveries. It is evaluated on out-of-time test defaults using MAE, RMSE, mean actual/predicted LGD, and a training-mean LGD benchmark. Small default samples must be disclosed and prevent model fitting below the configured minimum. EAD is a documented installment-balance approximation. EL is PD × LGD × EAD. These assumptions are simplified and product-specific.
 
 ## Risks and monitoring
 
 Synthetic validity, selection bias, missing-data shift, calibration drift, proxy discrimination, policy feedback loops, limited-default uncertainty, and weak recovery data are material risks. Monitor immediate scores, grades, approvals, missingness and PSI; after maturation monitor default rate, AUC/KS, calibration, realized loss and vintage performance. PSI informs investigation but never automatically triggers retraining. Review when new cohorts mature, drift persists, performance degrades, or policy/target changes.
-

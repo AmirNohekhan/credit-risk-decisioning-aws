@@ -13,7 +13,7 @@ from credit_risk.decisioning import (
     stress_portfolio,
 )
 from credit_risk.features import monthly_payment
-from credit_risk.modeling import ModelBundle, select_champion, temporal_split
+from credit_risk.modeling import ModelBundle, lgd_metrics, select_champion, temporal_split
 from credit_risk.schemas import Application, Bureau
 from credit_risk.serving import create_app
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
@@ -96,6 +96,13 @@ def test_champion_selection_enforces_quality_gates():
     champion, gates = select_champion(candidates)
     assert champion == "interpretable"
     assert gates["challenger"]["passed"] is False
+
+
+def test_lgd_metrics_are_interpretable_and_bounded():
+    report = lgd_metrics(np.array([0.2, 0.5, 0.8]), np.array([-0.2, 0.6, 1.4]))
+    assert report["mean_predicted_lgd"] == pytest.approx((0 + 0.6 + 1) / 3)
+    assert report["mae"] >= 0
+    assert report["rmse"] >= report["mae"]
 
 
 def test_policy_yaml_is_runtime_authority(tmp_path: Path):

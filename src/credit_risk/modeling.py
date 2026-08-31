@@ -13,7 +13,13 @@ from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestRegress
 from sklearn.frozen import FrozenEstimator
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    brier_score_loss,
+    mean_absolute_error,
+    mean_squared_error,
+    roc_auc_score,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -57,6 +63,17 @@ def metrics(y, p) -> dict[str, float]:
         "ks": ks_statistic(y, p),
         "gini": float(2 * auc - 1),
         "brier": float(brier_score_loss(y, p)),
+    }
+
+
+def lgd_metrics(actual: pd.Series | np.ndarray, predicted: np.ndarray) -> dict[str, float]:
+    y = np.asarray(actual, dtype=float)
+    p = np.asarray(predicted, dtype=float).clip(0, 1)
+    return {
+        "mae": float(mean_absolute_error(y, p)),
+        "rmse": float(np.sqrt(mean_squared_error(y, p))),
+        "mean_actual_lgd": float(y.mean()),
+        "mean_predicted_lgd": float(p.mean()),
     }
 
 
@@ -122,6 +139,7 @@ def registry_manifest(bundle: ModelBundle, report: dict) -> dict:
         "default_definition": "90+ DPD or charge-off within 12 months",
         "training_split": report["split"],
         "candidate_metrics": report["candidates"],
+        "lgd_validation": report["lgd"],
         "quality_gates": report["quality_gates"],
         "promotion_decision": "PROMOTE",
         "compatible_policy_versions": ["policy-v1"],
@@ -161,7 +179,13 @@ def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
     gb_calibrated = CalibratedClassifierCV(FrozenEstimator(gb), method="sigmoid")
     gb_calibrated.fit(val[MODEL_FEATURES], yval)
     defaults = train[train.default_12m.eq(1) & train.lgd_realized.notna()]
+    test_defaults = test[test.default_12m.eq(1) & test.lgd_realized.notna()]
     lgd = None
+    lgd_report: dict[str, Any] = {
+        "training_defaults": len(defaults),
+        "test_defaults": len(test_defaults),
+        "status": "insufficient_defaults",
+    }
     if len(defaults) >= 20:
         lgd = Pipeline(
             [
@@ -175,6 +199,16 @@ def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
             ]
         )
         lgd.fit(defaults[MODEL_FEATURES], defaults.lgd_realized)
+        if len(test_defaults) > 0:
+            predictions = np.asarray(lgd.predict(test_defaults[MODEL_FEATURES])).clip(0.1, 0.95)
+            benchmark = np.full(len(test_defaults), float(defaults.lgd_realized.mean()))
+            lgd_report.update(
+                {
+                    "status": "evaluated",
+                    "model": lgd_metrics(test_defaults.lgd_realized, predictions),
+                    "mean_lgd_benchmark": lgd_metrics(test_defaults.lgd_realized, benchmark),
+                }
+            )
     candidates = {
         "logistic_calibrated": metrics(
             test.default_12m.astype(int),
@@ -197,6 +231,7 @@ def train_models(df: pd.DataFrame) -> tuple[ModelBundle, dict]:
         "candidates": candidates,
         "champion": champion,
         "quality_gates": gates,
+        "lgd": lgd_report,
         "split": {
             "train": len(train),
             "validation": len(val),

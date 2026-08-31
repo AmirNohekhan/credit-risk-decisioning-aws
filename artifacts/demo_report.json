@@ -37,6 +37,23 @@
         "maximum_brier": 0.25
       }
     },
+    "lgd": {
+      "training_defaults": 277,
+      "test_defaults": 106,
+      "status": "evaluated",
+      "model": {
+        "mae": 0.12902727368639585,
+        "rmse": 0.15570979622259473,
+        "mean_actual_lgd": 0.7309742065125112,
+        "mean_predicted_lgd": 0.7087794792427116
+      },
+      "mean_lgd_benchmark": {
+        "mae": 0.1311267208804433,
+        "rmse": 0.15707643187409628,
+        "mean_actual_lgd": 0.7309742065125112,
+        "mean_predicted_lgd": 0.7105564788615428
+      }
+    },
     "split": {
       "train": 1344,
       "validation": 448,
@@ -48,7 +65,7 @@
   "portfolio": {
     "approval_rate": 0.4,
     "observed_default_rate": 0.23333333333333334,
-    "expected_loss": 134109.7
+    "expected_loss": 129327.44000000003
   },
   "policies": {
     "conservative": {
@@ -56,35 +73,47 @@
       "approval_rate": 0.26666666666666666,
       "refer_rate": 0.13333333333333333,
       "decline_rate": 0.6,
-      "booked_volume": 368277.15,
-      "expected_loss": 7615.09,
-      "expected_net_contribution": 43022.4
+      "booked_volume": 358285.44,
+      "expected_loss": 7390.32,
+      "expected_net_contribution": 42865.92
     },
     "balanced": {
       "applications": 60,
       "approval_rate": 0.4,
       "refer_rate": 0.21666666666666667,
       "decline_rate": 0.38333333333333336,
-      "booked_volume": 534188.17,
-      "expected_loss": 17155.66,
-      "expected_net_contribution": 75669.7
+      "booked_volume": 522787.57,
+      "expected_loss": 16855.85,
+      "expected_net_contribution": 75448.6
     },
     "growth": {
       "applications": 60,
       "approval_rate": 0.48333333333333334,
       "refer_rate": 0.25,
       "decline_rate": 0.26666666666666666,
-      "booked_volume": 595103.97,
-      "expected_loss": 22439.41,
-      "expected_net_contribution": 88412.25
+      "booked_volume": 583302.55,
+      "expected_loss": 22097.04,
+      "expected_net_contribution": 88183.54
     }
   },
   "stress": {
-    "name": "simulated_downturn",
-    "pd_multiplier": 1.35,
-    "lgd_addon": 0.08,
-    "base_expected_loss": 134109.7,
-    "stressed_expected_loss": 201427.81682697064
+    "scenario": "simulated_downturn",
+    "applications": 60,
+    "base": {
+      "approval_rate": 0.4,
+      "expected_loss": 16855.85,
+      "expected_net_contribution": 75448.6
+    },
+    "stressed": {
+      "approval_rate": 0.3,
+      "expected_loss": 13696.66,
+      "expected_net_contribution": 52974.87
+    },
+    "assumptions": {
+      "pd_multiplier": 1.35,
+      "lgd_addon": 0.08,
+      "funding_cost_addon": 0.02
+    }
   },
   "fairness_audit": [
     {
@@ -115,16 +144,16 @@
     "application_id": "app_0000946",
     "pd_12m": 0.139699,
     "lgd": 0.697413,
-    "ead": 14502.49,
-    "expected_loss": 1412.94,
+    "ead": 14218.74,
+    "expected_loss": 1385.3,
     "risk_grade": "D",
     "model_version": "pd-logistic-cal-v2",
     "feature_version": "application-v1",
-    "decision_id": "dec_d5227dee7ae64b4b",
-    "decision_timestamp": "2026-08-31T15:22:49.044449Z",
+    "decision_id": "dec_52890b7c81c64f90",
+    "decision_timestamp": "2026-08-31T15:30:38.858421Z",
     "decision": "REFER",
-    "recommended_apr": 19.07,
-    "expected_net_contribution": 2229.4,
+    "recommended_apr": 18.91,
+    "expected_net_contribution": 2208.6,
     "reason_codes": [
       "STRONG_PAYMENT_HISTORY"
     ],
