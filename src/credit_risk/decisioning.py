@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 import numpy as np
@@ -159,4 +159,81 @@ def policy_simulation(engine: DecisionEngine, apps: list[Application]) -> dict:
         "booked_volume": round(sum(d.ead for d in booked), 2),
         "expected_loss": round(sum(d.expected_loss for d in booked), 2),
         "expected_net_contribution": round(sum(d.expected_net_contribution for d in booked), 2),
+    }
+
+
+def stress_portfolio(
+    engine: DecisionEngine,
+    apps: list[Application],
+    pd_multiplier: float,
+    lgd_addon: float,
+    funding_cost_addon: float,
+) -> dict:
+    base = [engine.decide(app) for app in apps]
+    stressed_rows: list[dict[str, Any]] = []
+    for app, decision in zip(apps, base, strict=True):
+        pd_ = min(0.999, decision.pd_12m * pd_multiplier)
+        lgd = min(0.99, decision.lgd + lgd_addon)
+        expected_loss = pd_ * lgd * decision.ead
+        funding_cost = engine.policy.funding_cost + funding_cost_addon
+        apr = float(
+            np.clip(
+                funding_cost
+                + engine.policy.operating_cost
+                + engine.policy.target_margin
+                + expected_loss / app.requested_amount,
+                engine.policy.apr_floor,
+                engine.policy.apr_cap,
+            )
+        )
+        expected_interest = app.requested_amount * apr * (app.term_months / 12) * 0.55
+        funding = app.requested_amount * funding_cost * (app.term_months / 12) * 0.55
+        contribution = (
+            expected_interest
+            + decision.ead * 0.01
+            - expected_loss
+            - funding
+            - app.requested_amount * engine.policy.operating_cost
+        )
+        features = application_features(app)
+        hard = (
+            app.annual_income < engine.policy.min_income
+            or float(features["debt_to_income"]) > engine.policy.max_dti
+            or int(features["delinquencies_24m"] or 0) >= engine.policy.severe_delinquencies
+        )
+        outcome = (
+            "DECLINE"
+            if hard or pd_ > engine.policy.max_pd or contribution < 0
+            else (
+                "REFER" if pd_ > engine.policy.refer_pd or int(features["thin_file"]) else "APPROVE"
+            )
+        )
+        stressed_rows.append(
+            {"decision": outcome, "expected_loss": expected_loss, "contribution": contribution}
+        )
+    n = max(len(apps), 1)
+    base_booked = [row for row in base if row.decision == "APPROVE"]
+    stressed_booked = [row for row in stressed_rows if row["decision"] == "APPROVE"]
+    return {
+        "scenario": "simulated_downturn",
+        "applications": len(apps),
+        "base": {
+            "approval_rate": len(base_booked) / n,
+            "expected_loss": round(sum(row.expected_loss for row in base_booked), 2),
+            "expected_net_contribution": round(
+                sum(row.expected_net_contribution for row in base_booked), 2
+            ),
+        },
+        "stressed": {
+            "approval_rate": len(stressed_booked) / n,
+            "expected_loss": round(sum(float(row["expected_loss"]) for row in stressed_booked), 2),
+            "expected_net_contribution": round(
+                sum(float(row["contribution"]) for row in stressed_booked), 2
+            ),
+        },
+        "assumptions": {
+            "pd_multiplier": pd_multiplier,
+            "lgd_addon": lgd_addon,
+            "funding_cost_addon": funding_cost_addon,
+        },
     }

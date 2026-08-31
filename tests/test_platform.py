@@ -5,7 +5,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from credit_risk.analytics import population_stability_index
-from credit_risk.decisioning import DecisionEngine, Policy, ead_estimate, risk_grade
+from credit_risk.decisioning import (
+    DecisionEngine,
+    Policy,
+    ead_estimate,
+    risk_grade,
+    stress_portfolio,
+)
 from credit_risk.features import monthly_payment
 from credit_risk.modeling import ModelBundle, select_champion, temporal_split
 from credit_risk.schemas import Application, Bureau
@@ -111,6 +117,15 @@ pricing:
     assert policy.max_pd == 0.12
     assert policy.min_income == 25000
     assert policy.apr_cap == 0.29
+
+
+def test_stress_reprices_and_reapplies_policy(application):
+    engine = DecisionEngine(ModelBundle(Stub(), LGD()))
+    mild = stress_portfolio(engine, [application], 1.0, 0.0, 0.0)
+    downturn = stress_portfolio(engine, [application], 3.0, 0.2, 0.08)
+    assert mild["base"]["approval_rate"] == 1.0
+    assert downturn["stressed"]["approval_rate"] <= mild["stressed"]["approval_rate"]
+    assert downturn["assumptions"]["funding_cost_addon"] == 0.08
 
 
 def test_validation_rejects_implausible():

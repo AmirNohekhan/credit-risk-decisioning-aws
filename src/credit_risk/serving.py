@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 
-from .decisioning import DecisionEngine, Policy, policy_simulation
+from .decisioning import DecisionEngine, Policy, policy_simulation, stress_portfolio
 from .modeling import ModelBundle
 from .schemas import Application, PolicyRequest, StressRequest
 from .storage import JsonDecisionStore
@@ -69,19 +69,13 @@ def create_app(bundle: ModelBundle | None = None, store_path: Path | None = None
 
     @api.post("/v1/stress-test")
     def stress(req: StressRequest):
-        base = [engine.decide(a) for a in req.applications]
-        stressed = []
-        for d in base:
-            pd_ = min(0.999, d.pd_12m * req.pd_multiplier)
-            lgd = min(0.99, d.lgd + req.lgd_addon)
-            stressed.append(pd_ * lgd * d.ead)
-        return {
-            "scenario": "simulated_downturn",
-            "applications": len(base),
-            "base_expected_loss": sum(d.expected_loss for d in base),
-            "stressed_expected_loss": sum(stressed),
-            "assumptions": req.model_dump(exclude={"applications"}),
-        }
+        return stress_portfolio(
+            engine,
+            req.applications,
+            req.pd_multiplier,
+            req.lgd_addon,
+            req.funding_cost_addon,
+        )
 
     return api
 

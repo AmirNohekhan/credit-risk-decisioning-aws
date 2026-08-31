@@ -14,7 +14,7 @@ from credit_risk.analytics import (
     population_stability_index,
     vintage_analysis,
 )
-from credit_risk.decisioning import DecisionEngine, Policy, policy_simulation
+from credit_risk.decisioning import DecisionEngine, Policy, policy_simulation, stress_portfolio
 from credit_risk.modeling import save_registry_manifest, train_models
 from credit_risk.schemas import Application, Bureau
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
@@ -85,8 +85,7 @@ def main(n: int = 2500):
     vintage = vintage_analysis(loans, performance)
     vintage.to_csv(out / "vintage_analysis.csv", index=False)
     pd.DataFrame(frontier).to_csv(out / "policy_frontier.csv", index=False)
-    stress_base = sum(d.expected_loss for d in decisions)
-    stress = sum(min(0.999, d.pd_12m * 1.35) * min(0.99, d.lgd + 0.08) * d.ead for d in decisions)
+    stress = stress_portfolio(engine, [sample_app(r) for r in test.itertuples()], 1.35, 0.08, 0.02)
     report = {
         "synthetic_population": {
             "applications": len(apps),
@@ -101,13 +100,7 @@ def main(n: int = 2500):
             "expected_loss": float(test.expected_loss.sum()),
         },
         "policies": policies,
-        "stress": {
-            "name": "simulated_downturn",
-            "pd_multiplier": 1.35,
-            "lgd_addon": 0.08,
-            "base_expected_loss": stress_base,
-            "stressed_expected_loss": stress,
-        },
+        "stress": stress,
         "fairness_audit": fairness,
         "selection_bias": {
             "approved_rate": float(loans.approved_historically.mean()),
