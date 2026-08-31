@@ -17,3 +17,5 @@ LGD is a bounded random-forest regression among defaults with observed synthetic
 ## Risks and monitoring
 
 Synthetic validity, selection bias, missing-data shift, calibration drift, proxy discrimination, policy feedback loops, limited-default uncertainty, and weak recovery data are material risks. Monitor immediate scores, grades, approvals, missingness and PSI; after maturation monitor default rate, AUC/KS, calibration, realized loss and vintage performance. PSI informs investigation but never automatically triggers retraining. Review when new cohorts mature, drift persists, performance degrades, or policy/target changes.
+
+Reject-inference analysis compares an approved-only logistic model with inverse-probability weighting based on the historical acceptance propensity. Population evaluation uses synthetic counterfactual outcomes solely because the simulator knows them. Real declined-applicant outcomes remain unknown, and weighting depends on correct propensity specification and adequate overlap; the method is a sensitivity analysis, not recovery of truth.

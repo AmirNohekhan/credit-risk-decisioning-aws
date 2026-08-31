@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from credit_risk.analytics import population_stability_index
+from credit_risk.analytics import population_stability_index, reject_inference_comparison
 from credit_risk.decisioning import (
     DecisionEngine,
     Policy,
@@ -137,6 +137,15 @@ def test_stress_reprices_and_reapplies_policy(application):
     assert mild["base"]["approval_rate"] == 1.0
     assert downturn["stressed"]["approval_rate"] <= mild["stressed"]["approval_rate"]
     assert downturn["assumptions"]["funding_cost_addon"] == 0.08
+
+
+def test_reject_inference_compares_population_performance():
+    loans, _ = simulate_performance(generate_applications(500))
+    report = reject_inference_comparison(loans)
+    assert report["observed_training_outcomes"] < report["training_applications"]
+    assert set(report) >= {"approved_only", "inverse_probability_weighted"}
+    assert 0 <= report["approved_only"]["population"]["brier"] <= 1
+    assert report["inverse_probability_weighted"]["maximum_training_weight"] >= 1
 
 
 def test_validation_rejects_implausible():

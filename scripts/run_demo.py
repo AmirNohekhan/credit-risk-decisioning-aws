@@ -12,6 +12,7 @@ from credit_risk.analytics import (
     fairness_audit,
     inverse_probability_weights,
     population_stability_index,
+    reject_inference_comparison,
     vintage_analysis,
 )
 from credit_risk.decisioning import DecisionEngine, Policy, policy_simulation, stress_portfolio
@@ -108,6 +109,7 @@ def main(n: int = 2500):
             "booked_default_rate": float(booked.default_12m.mean()),
             "ipw_effective_weight": float(inverse_probability_weights(loans).sum()),
         },
+        "reject_inference": reject_inference_comparison(loans),
         "stability": {
             "credit_score_psi": population_stability_index(
                 booked.iloc[: len(booked) // 2].credit_score.fillna(620),

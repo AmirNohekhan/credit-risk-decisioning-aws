@@ -137,6 +137,48 @@
     "booked_default_rate": 0.20625,
     "ipw_effective_weight": 2412.352275043768
   },
+  "reject_inference": {
+    "training_applications": 1750,
+    "observed_training_outcomes": 1557,
+    "population_test_applications": 750,
+    "evaluation_note": "Population outcomes are synthetic counterfactuals unavailable in real lending.",
+    "approved_only": {
+      "population": {
+        "roc_auc": 0.7849552133259998,
+        "pr_auc": 0.5267417441956471,
+        "ks": 0.44059872711558107,
+        "gini": 0.5699104266519996,
+        "brier": 0.14942738436976064
+      },
+      "booked": {
+        "roc_auc": 0.7778361748493783,
+        "pr_auc": 0.49806832036254123,
+        "ks": 0.43646968337392633,
+        "gini": 0.5556723496987566,
+        "brier": 0.13975087855570267
+      },
+      "mean_population_pd": 0.25029504909248945
+    },
+    "inverse_probability_weighted": {
+      "population": {
+        "roc_auc": 0.7836882218904692,
+        "pr_auc": 0.5269677261416407,
+        "ks": 0.4332324978392394,
+        "gini": 0.5673764437809383,
+        "brier": 0.149902403012974
+      },
+      "booked": {
+        "roc_auc": 0.776233816177413,
+        "pr_auc": 0.49492541347036423,
+        "ks": 0.42771439559030894,
+        "gini": 0.5524676323548261,
+        "brier": 0.14028033508706045
+      },
+      "mean_population_pd": 0.25076515745407785,
+      "maximum_training_weight": 3.56104588219186
+    },
+    "observed_population_default_rate": 0.23733333333333334
+  },
   "stability": {
     "credit_score_psi": 0.015895714282561375
   },
@@ -149,8 +191,8 @@
     "risk_grade": "D",
     "model_version": "pd-logistic-cal-v2",
     "feature_version": "application-v1",
-    "decision_id": "dec_52890b7c81c64f90",
-    "decision_timestamp": "2026-08-31T15:30:38.858421Z",
+    "decision_id": "dec_ef4bad24339e4480",
+    "decision_timestamp": "2026-08-31T15:32:57.517598Z",
     "decision": "REFER",
     "recommended_apr": 18.91,
     "expected_net_contribution": 2208.6,
