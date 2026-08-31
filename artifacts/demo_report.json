@@ -179,6 +179,59 @@
     },
     "observed_population_default_rate": 0.23733333333333334
   },
+  "rolling_backtest": [
+    {
+      "fold": 1,
+      "training_loans": 1233,
+      "test_loans": 224,
+      "training_end": "2022-05-09",
+      "test_start": "2022-05-10",
+      "test_end": "2022-08-11",
+      "metrics": {
+        "roc_auc": 0.854272778720996,
+        "pr_auc": 0.5840270582605956,
+        "ks": 0.5826259196378041,
+        "gini": 0.7085455574419921,
+        "brier": 0.10401433632067354
+      },
+      "approval_rate_at_max_pd": 0.59375,
+      "approved_observed_default_rate": 0.06766917293233082
+    },
+    {
+      "fold": 2,
+      "training_loans": 1568,
+      "test_loans": 224,
+      "training_end": "2022-09-28",
+      "test_start": "2022-09-30",
+      "test_end": "2022-12-23",
+      "metrics": {
+        "roc_auc": 0.7130730050933786,
+        "pr_auc": 0.3277280895352668,
+        "ks": 0.38087153367289195,
+        "gini": 0.42614601018675713,
+        "brier": 0.14415422486120083
+      },
+      "approval_rate_at_max_pd": 0.6473214285714286,
+      "approved_observed_default_rate": 0.11724137931034483
+    },
+    {
+      "fold": 3,
+      "training_loans": 1905,
+      "test_loans": 224,
+      "training_end": "2023-02-04",
+      "test_start": "2023-02-05",
+      "test_end": "2023-05-08",
+      "metrics": {
+        "roc_auc": 0.7519096288327056,
+        "pr_auc": 0.5683826198713438,
+        "ks": 0.39031737493275964,
+        "gini": 0.5038192576654112,
+        "brier": 0.155388267525734
+      },
+      "approval_rate_at_max_pd": 0.5803571428571429,
+      "approved_observed_default_rate": 0.14615384615384616
+    }
+  ],
   "stability": {
     "credit_score_psi": 0.015895714282561375
   },
@@ -191,8 +244,8 @@
     "risk_grade": "D",
     "model_version": "pd-logistic-cal-v2",
     "feature_version": "application-v1",
-    "decision_id": "dec_ef4bad24339e4480",
-    "decision_timestamp": "2026-08-31T15:32:57.517598Z",
+    "decision_id": "dec_b77c767c0d304d89",
+    "decision_timestamp": "2026-08-31T15:36:10.565263Z",
     "decision": "REFER",
     "recommended_apr": 18.91,
     "expected_net_contribution": 2208.6,

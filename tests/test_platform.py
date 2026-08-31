@@ -4,7 +4,11 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from credit_risk.analytics import population_stability_index, reject_inference_comparison
+from credit_risk.analytics import (
+    population_stability_index,
+    reject_inference_comparison,
+    rolling_origin_backtest,
+)
 from credit_risk.decisioning import (
     DecisionEngine,
     Policy,
@@ -12,7 +16,7 @@ from credit_risk.decisioning import (
     risk_grade,
     stress_portfolio,
 )
-from credit_risk.features import monthly_payment
+from credit_risk.features import MODEL_FEATURES, monthly_payment
 from credit_risk.modeling import ModelBundle, lgd_metrics, select_champion, temporal_split
 from credit_risk.schemas import Application, Bureau
 from credit_risk.serving import create_app
@@ -146,6 +150,29 @@ def test_reject_inference_compares_population_performance():
     assert set(report) >= {"approved_only", "inverse_probability_weighted"}
     assert 0 <= report["approved_only"]["population"]["brier"] <= 1
     assert report["inverse_probability_weighted"]["maximum_training_weight"] >= 1
+
+
+def test_rolling_backtest_preserves_temporal_order():
+    loans, _ = simulate_performance(generate_applications(700))
+    folds = rolling_origin_backtest(matured_booked(loans))
+    assert len(folds) == 3
+    assert all(fold["training_end"] < fold["test_start"] for fold in folds)
+    assert all(0 <= fold["metrics"]["brier"] <= 1 for fold in folds)
+
+
+def test_feature_allowlist_excludes_outcomes_and_audit_attributes():
+    forbidden = {
+        "default_12m",
+        "latent_default_12m",
+        "latent_pd_12m",
+        "approved_historically",
+        "lgd_realized",
+        "recovery_realized",
+        "ead_realized",
+        "audit_group",
+        "application_date",
+    }
+    assert forbidden.isdisjoint(MODEL_FEATURES)
 
 
 def test_validation_rejects_implausible():

@@ -114,3 +114,52 @@ def reject_inference_comparison(apps: pd.DataFrame) -> dict:
         },
         "observed_population_default_rate": float(population_target.mean()),
     }
+
+
+def rolling_origin_backtest(matured_booked_loans: pd.DataFrame, max_pd: float = 0.18) -> list[dict]:
+    """Run expanding-window PD backtests without crossing temporal boundaries."""
+    from sklearn.calibration import CalibratedClassifierCV
+    from sklearn.frozen import FrozenEstimator
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import Pipeline
+
+    from .features import MODEL_FEATURES
+    from .modeling import metrics, preprocessor
+
+    ordered = matured_booked_loans.sort_values("application_date").reset_index(drop=True)
+    results = []
+    for fold, train_fraction in enumerate((0.55, 0.70, 0.85), start=1):
+        boundary_row = max(1, int(len(ordered) * train_fraction)) - 1
+        cutoff_date = ordered.iloc[boundary_row].application_date
+        development = ordered[ordered.application_date <= cutoff_date]
+        test = ordered[ordered.application_date > cutoff_date].head(int(len(ordered) * 0.10))
+        calibration_start = int(len(development) * 0.80)
+        train = development.iloc[:calibration_start]
+        calibration = development.iloc[calibration_start:]
+        model = Pipeline(
+            [
+                ("prep", preprocessor()),
+                ("model", LogisticRegression(max_iter=1000, class_weight="balanced")),
+            ]
+        )
+        model.fit(train[MODEL_FEATURES], train.default_12m.astype(int))
+        calibrated = CalibratedClassifierCV(FrozenEstimator(model), method="sigmoid")
+        calibrated.fit(calibration[MODEL_FEATURES], calibration.default_12m.astype(int))
+        pd_values = calibrated.predict_proba(test[MODEL_FEATURES])[:, 1]
+        approvals = pd_values <= max_pd
+        results.append(
+            {
+                "fold": fold,
+                "training_loans": len(development),
+                "test_loans": len(test),
+                "training_end": str(development.application_date.max().date()),
+                "test_start": str(test.application_date.min().date()),
+                "test_end": str(test.application_date.max().date()),
+                "metrics": metrics(test.default_12m.astype(int), pd_values),
+                "approval_rate_at_max_pd": float(approvals.mean()),
+                "approved_observed_default_rate": float(
+                    test.default_12m.to_numpy()[approvals].mean() if approvals.any() else np.nan
+                ),
+            }
+        )
+    return results
