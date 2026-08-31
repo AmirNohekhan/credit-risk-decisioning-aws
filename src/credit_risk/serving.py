@@ -19,7 +19,9 @@ def create_app(bundle: ModelBundle | None = None, store_path: Path | None = None
                 "Model artifact missing; run `make train` or `python scripts/run_demo.py`"
             )
         bundle = ModelBundle.load(str(path))
-    engine = DecisionEngine(bundle)
+    policy_path = Path(os.getenv("CREDIT_RISK_POLICY", "configs/policy.yaml"))
+    policy = Policy.from_yaml(policy_path) if policy_path.exists() else Policy()
+    engine = DecisionEngine(bundle, policy)
     store = JsonDecisionStore(store_path or Path("artifacts/decisions.json"))
     api = FastAPI(title="Credit Risk Decisioning API", version="1.0")
 
@@ -52,7 +54,15 @@ def create_app(bundle: ModelBundle | None = None, store_path: Path | None = None
     def simulate(req: PolicyRequest):
         return policy_simulation(
             DecisionEngine(
-                bundle, Policy(max_pd=req.max_pd, refer_pd=req.refer_pd, max_dti=req.max_dti)
+                bundle,
+                Policy(
+                    **{
+                        **engine.policy.__dict__,
+                        "max_pd": req.max_pd,
+                        "refer_pd": req.refer_pd,
+                        "max_dti": req.max_dti,
+                    }
+                ),
             ),
             req.applications,
         )

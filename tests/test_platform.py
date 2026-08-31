@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from credit_risk.analytics import population_stability_index
-from credit_risk.decisioning import DecisionEngine, ead_estimate, risk_grade
+from credit_risk.decisioning import DecisionEngine, Policy, ead_estimate, risk_grade
 from credit_risk.features import monthly_payment
 from credit_risk.modeling import ModelBundle, select_champion, temporal_split
 from credit_risk.schemas import Application, Bureau
@@ -86,6 +86,31 @@ def test_champion_selection_enforces_quality_gates():
     champion, gates = select_champion(candidates)
     assert champion == "interpretable"
     assert gates["challenger"]["passed"] is False
+
+
+def test_policy_yaml_is_runtime_authority(tmp_path: Path):
+    policy_file = tmp_path / "policy.yaml"
+    policy_file.write_text(
+        """version: policy-test
+max_pd: 0.12
+refer_pd: 0.07
+max_dti: 0.44
+minimum_verified_income: 25000
+severe_delinquencies_24m: 2
+pricing:
+  funding_cost: 0.04
+  operating_cost: 0.01
+  target_margin: 0.03
+  apr_floor: 0.08
+  apr_cap: 0.29
+""",
+        encoding="utf-8",
+    )
+    policy = Policy.from_yaml(policy_file)
+    assert policy.version == "policy-test"
+    assert policy.max_pd == 0.12
+    assert policy.min_income == 25000
+    assert policy.apr_cap == 0.29
 
 
 def test_validation_rejects_implausible():

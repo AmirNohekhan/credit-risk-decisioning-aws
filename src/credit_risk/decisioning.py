@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal, cast
 from uuid import uuid4
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from .features import application_features
 from .modeling import ModelBundle
@@ -56,6 +58,27 @@ class Policy:
     funding_cost: float = 0.05
     operating_cost: float = 0.02
     target_margin: float = 0.035
+    apr_floor: float = 0.07
+    apr_cap: float = 0.36
+
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> Policy:
+        with open(path, encoding="utf-8") as handle:
+            config = yaml.safe_load(handle)
+        pricing = config.get("pricing", {})
+        return cls(
+            version=config["version"],
+            max_pd=float(config["max_pd"]),
+            refer_pd=float(config["refer_pd"]),
+            max_dti=float(config["max_dti"]),
+            min_income=float(config["minimum_verified_income"]),
+            severe_delinquencies=int(config["severe_delinquencies_24m"]),
+            funding_cost=float(pricing["funding_cost"]),
+            operating_cost=float(pricing["operating_cost"]),
+            target_margin=float(pricing["target_margin"]),
+            apr_floor=float(pricing["apr_floor"]),
+            apr_cap=float(pricing["apr_cap"]),
+        )
 
 
 class DecisionEngine:
@@ -87,7 +110,11 @@ class DecisionEngine:
         p = self.policy
         annual_el = s.expected_loss / app.requested_amount
         apr = float(
-            np.clip(p.funding_cost + p.operating_cost + p.target_margin + annual_el, 0.07, 0.36)
+            np.clip(
+                p.funding_cost + p.operating_cost + p.target_margin + annual_el,
+                p.apr_floor,
+                p.apr_cap,
+            )
         )
         expected_interest = app.requested_amount * apr * (app.term_months / 12) * 0.55
         funding = app.requested_amount * p.funding_cost * (app.term_months / 12) * 0.55

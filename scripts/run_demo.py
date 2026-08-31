@@ -56,7 +56,7 @@ def main(n: int = 2500):
     bundle.save(str(out / "model.joblib"))
     save_registry_manifest(str(out / "model_registry.json"), bundle, model_report)
     # Keep the interactive demo quick; model metrics still use the full chronological test cohort.
-    engine = DecisionEngine(bundle)
+    engine = DecisionEngine(bundle, Policy.from_yaml(ROOT / "configs" / "policy.yaml"))
     test = booked.sort_values("application_date").tail(60).copy()
     decisions = [engine.decide(sample_app(r)) for r in test.itertuples()]
     test["decision"] = [d.decision for d in decisions]
