@@ -21,6 +21,7 @@ from credit_risk.modeling import ModelBundle, lgd_metrics, select_champion, temp
 from credit_risk.schemas import Application, Bureau
 from credit_risk.serving import create_app
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
+from credit_risk.storage import JsonDecisionStore
 
 
 class Stub:
@@ -173,6 +174,36 @@ def test_feature_allowlist_excludes_outcomes_and_audit_attributes():
         "application_date",
     }
     assert forbidden.isdisjoint(MODEL_FEATURES)
+
+
+def test_decision_store_round_trip(application, tmp_path: Path):
+    engine = DecisionEngine(ModelBundle(Stub(), LGD()))
+    store = JsonDecisionStore(tmp_path / "decisions.json")
+    d = engine.decide(application)
+    store.put(d)
+    assert store.get(application.application_id)["decision_id"] == d.decision_id
+    assert store.get("missing_application") is None
+
+
+def test_decision_store_write_is_atomic(application, tmp_path: Path, monkeypatch):
+    engine = DecisionEngine(ModelBundle(Stub(), LGD()))
+    path = tmp_path / "decisions.json"
+    store = JsonDecisionStore(path)
+    store.put(engine.decide(application))
+    original = path.read_text(encoding="utf-8")
+
+    def broken_dump(*args, **kwargs):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr("credit_risk.storage.json.dump", broken_dump)
+    other = engine.decide(application.model_copy(update={"application_id": "app_test_2"}))
+    with pytest.raises(RuntimeError):
+        store.put(other)
+
+    # A failed write must not truncate or corrupt the previously committed file,
+    # and must not leave a stray temp file behind in the store directory.
+    assert path.read_text(encoding="utf-8") == original
+    assert list(tmp_path.glob(".*.tmp")) == []
 
 
 def test_validation_rejects_implausible():
