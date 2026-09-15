@@ -21,6 +21,7 @@ from credit_risk.modeling import ModelBundle, lgd_metrics, select_champion, temp
 from credit_risk.schemas import Application, Bureau
 from credit_risk.serving import create_app
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
+from credit_risk.storage import JsonDecisionStore
 
 
 class Stub:
@@ -173,6 +174,19 @@ def test_feature_allowlist_excludes_outcomes_and_audit_attributes():
         "application_date",
     }
     assert forbidden.isdisjoint(MODEL_FEATURES)
+
+
+def test_decision_store_persists_atomically_across_instances(application, tmp_path: Path):
+    store_path = tmp_path / "decisions.json"
+    bundle = ModelBundle(Stub(), LGD())
+    decision = DecisionEngine(bundle).decide(application)
+
+    JsonDecisionStore(store_path).put(decision)
+
+    reopened = JsonDecisionStore(store_path)
+    assert reopened.get(decision.application_id)["decision"] == decision.decision
+    assert reopened.get("missing_application") is None
+    assert list(store_path.parent.glob(".*.tmp")) == []
 
 
 def test_validation_rejects_implausible():
