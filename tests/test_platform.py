@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -18,9 +19,10 @@ from credit_risk.decisioning import (
 )
 from credit_risk.features import MODEL_FEATURES, monthly_payment
 from credit_risk.modeling import ModelBundle, lgd_metrics, select_champion, temporal_split
-from credit_risk.schemas import Application, Bureau
+from credit_risk.schemas import Application, Bureau, Decision
 from credit_risk.serving import create_app
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
+from credit_risk.storage import JsonDecisionStore
 
 
 class Stub:
@@ -187,3 +189,30 @@ def test_validation_rejects_implausible():
             credit_history_years=2,
             bureau=Bureau(),
         )
+
+
+def test_decision_store_survives_concurrent_writes(tmp_path: Path):
+    store = JsonDecisionStore(tmp_path / "decisions.json")
+    decisions = [
+        Decision(
+            application_id=f"app_{i}",
+            pd_12m=0.05,
+            lgd=0.4,
+            ead=1000.0,
+            expected_loss=20.0,
+            risk_grade="B",
+            model_version="v1",
+            feature_version="v1",
+            decision_id=f"dec_{i}",
+            decision="APPROVE",
+            recommended_apr=12.5,
+            expected_net_contribution=50.0,
+            reason_codes=["STRONG_PAYMENT_HISTORY"],
+            policy_version="policy-v1",
+        )
+        for i in range(50)
+    ]
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        list(pool.map(store.put, decisions))
+    for d in decisions:
+        assert store.get(d.application_id)["decision_id"] == d.decision_id
