@@ -1,5 +1,5 @@
 PYTHON ?= python
-.PHONY: setup data train evaluate backtest policy-simulate demo serve test lint format typecheck
+.PHONY: setup data train evaluate backtest policy-simulate demo serve test lint format typecheck clean
 setup:
 	$(PYTHON) -m pip install -e ".[dev]"
 data:
@@ -16,4 +16,5 @@ format:
 	$(PYTHON) -m ruff format src tests scripts
 typecheck:
 	$(PYTHON) -m mypy src
-
+clean:
+	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
