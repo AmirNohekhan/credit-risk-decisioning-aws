@@ -18,9 +18,10 @@ from credit_risk.decisioning import (
 )
 from credit_risk.features import MODEL_FEATURES, monthly_payment
 from credit_risk.modeling import ModelBundle, lgd_metrics, select_champion, temporal_split
-from credit_risk.schemas import Application, Bureau
+from credit_risk.schemas import Application, Bureau, PolicyRequest
 from credit_risk.serving import create_app
 from credit_risk.simulation import generate_applications, matured_booked, simulate_performance
+from credit_risk.storage import JsonDecisionStore
 
 
 class Stub:
@@ -187,3 +188,20 @@ def test_validation_rejects_implausible():
             credit_history_years=2,
             bureau=Bureau(),
         )
+
+
+def test_policy_request_rejects_inverted_thresholds(application):
+    apps = [application]
+    with pytest.raises(ValueError, match="refer_pd"):
+        PolicyRequest(applications=apps, max_pd=0.10, refer_pd=0.18)
+    assert PolicyRequest(applications=apps, max_pd=0.18, refer_pd=0.18).refer_pd == 0.18
+
+
+def test_decision_store_round_trip_leaves_no_temp_files(application, tmp_path: Path):
+    store = JsonDecisionStore(tmp_path / "decisions.json")
+    decision = DecisionEngine(ModelBundle(Stub(), LGD())).decide(application)
+    store.put(decision)
+    store.put(decision)
+    assert store.get("app_test")["decision_id"] == decision.decision_id
+    assert store.get("missing") is None
+    assert [p.name for p in tmp_path.iterdir()] == ["decisions.json"]

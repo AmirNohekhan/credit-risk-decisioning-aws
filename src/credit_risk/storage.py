@@ -12,7 +12,9 @@ class JsonDecisionStore:
     def put(self, d: Decision):
         records = self._read()
         records[d.application_id] = d.model_dump(mode="json")
-        self.path.write_text(json.dumps(records, indent=2), encoding="utf-8")
+        tmp = self.path.with_suffix(self.path.suffix + ".tmp")
+        tmp.write_text(json.dumps(records, indent=2), encoding="utf-8")
+        tmp.replace(self.path)
 
     def get(self, application_id: str):
         return self._read().get(application_id)

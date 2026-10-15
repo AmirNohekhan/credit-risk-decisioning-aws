@@ -61,6 +61,12 @@ class PolicyRequest(BaseModel):
     refer_pd: float = Field(0.10, gt=0, lt=1)
     max_dti: float = Field(0.55, gt=0, lt=2)
 
+    @model_validator(mode="after")
+    def thresholds_ordered(self):
+        if self.refer_pd > self.max_pd:
+            raise ValueError("refer_pd cannot exceed max_pd")
+        return self
+
 
 class StressRequest(BaseModel):
     applications: list[Application]
